@@ -365,9 +365,6 @@ st.markdown("""
             max-width: 80px;
             flex-shrink: 0;
         }
-        .product-image img {
-            border-radius: 8px;
-        }
         .product-info {
     flex: 1 1 auto;
     min-width: 0; /* 👈 ESSENCIAL para permitir quebra */
@@ -747,9 +744,9 @@ if termo:
                         st.markdown(f"""
                             <div class='product-container'>
                                 <div class='product-image'>
-                                    <img src='{imagem_url}' width='80' style='display: block;'/>
+                                    <img src='{imagem_url}' width='80' style='border-top-left-radius: 6px; border-top-right-radius: 6px; border-bottom-left-radius: 0; border-bottom-right-radius: 0; display: block;'/>
                                     <img src='{LOGO_SHIBATA_URL}' width='80' 
-                                        style='background-color: white; display: block; margin: 0 auto; border-radius: 4px; padding: 3px;'/>
+                                        style='background-color: white; display: block; margin: 0 auto; border-top-left-radius: 0; border-top-right-radius: 0; border-bottom-left-radius: 4px; border-bottom-right-radius: 4px; padding: 3px;'/>
                                 </div>
                                 <div class='product-info'>
                                     <div style='margin-bottom: 4px;'><b>{descricao_modificada}</b></div>
@@ -765,8 +762,7 @@ if termo:
     with col2:
         st.markdown(f"""
             <h5 style="display: flex; align-items: center; justify-content: center;">
-                <img src="{LOGO_NAGUMO_URL}" width="80" style="margin-right:8px; border-radius: 6px; border: 1.5px solid white; padding: 0px;"/>
-                Nagumo
+                <img src="{LOGO_NAGUMO_URL}" width="80" alt="Nagumo" style="margin-right:8px; border-radius: 6px; border: 1.5px solid white; padding: 0px;"/>
             </h5>
         """, unsafe_allow_html=True)
         st.markdown(f"<small>🔎 {len(produtos_nagumo_ordenados)} produto(s) encontrado(s).</small>", unsafe_allow_html=True)
