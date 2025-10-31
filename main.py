@@ -436,6 +436,9 @@ input[type="text"] {
 [data-testid="stColumn"] {
 margin-bottom: 20px;
 }
+header[data-testid="stHeader"] {
+    display: none;
+        }
     </style>
 """, unsafe_allow_html=True)
 
