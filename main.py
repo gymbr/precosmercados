@@ -18,6 +18,7 @@ HEADERS_SHIBATA = {
 # Links dos logos
 LOGO_SHIBATA_URL = "https://rawcdn.githack.com/gymbr/precosmercados/main/logo-shibata.png" # Logo do Shibata
 LOGO_NAGUMO_URL = "https://rawcdn.githack.com/gymbr/precosmercados/main/logo-nagumo2.png"   # Logo do Nagumo
+DEFAULT_IMAGE_URL = "https://rawcdn.githack.com/gymbr/precosmercados/main/sem-imagem.png" # Imagem padrão
 
 
 # Funções utilitárias
@@ -660,7 +661,10 @@ if termo:
                         oferta_info = p.get('oferta') or {}
                         preco_oferta = oferta_info.get('preco_oferta')
                         preco_antigo = oferta_info.get('preco_antigo')
-                        imagem_url = f"https://produtos.vipcommerce.com.br/250x250/{imagem}"
+                        
+                        # AJUSTE 1: Usar imagem padrão se 'imagem' estiver vazia
+                        imagem_url = f"https://produtos.vipcommerce.com.br/250x250/{imagem}" if imagem else DEFAULT_IMAGE_URL
+                        
                         preco_total = float(preco_oferta) if em_oferta and preco_oferta else preco
                         quantidade_dif = p.get('quantidade_unidade_diferente')
                         unidade_sigla = p.get('unidade_sigla')
@@ -746,7 +750,7 @@ if termo:
                         st.markdown(f"""
                             <div class='product-container'>
                                 <div class='product-image'>
-                                    <img src='{imagem_url}' width='80' style='border-top-left-radius: 6px; border-top-right-radius: 6px; border-bottom-left-radius: 0; border-bottom-right-radius: 0; display: block;'/>
+                                    <img src='{imagem_url}' width='80' style='background-color: white; border-top-left-radius: 6px; border-top-right-radius: 6px; border-bottom-left-radius: 0; border-bottom-right-radius: 0; display: block;'/>
                                     <img src='{LOGO_SHIBATA_URL}' width='80' 
                                         style='background-color: white; display: block; margin: 0 auto; border-top: 1.5px solid black; border-top-left-radius: 0; border-top-right-radius: 0; border-bottom-left-radius: 4px; border-bottom-right-radius: 4px; padding: 3px;'/>
                                 </div>
@@ -771,7 +775,11 @@ if termo:
         if not produtos_nagumo_ordenados:
             st.warning("Nenhum produto encontrado.")
         for p in produtos_nagumo_ordenados:
-            imagem = p['photosUrl'][0] if p.get('photosUrl') else ""
+            
+            # AJUSTE 3: Lógica para usar imagem padrão se 'photosUrl' estiver vazia ou for None
+            photos_list = p.get('photosUrl')
+            imagem = photos_list[0] if photos_list else DEFAULT_IMAGE_URL
+
             preco_unitario = p['preco_unitario_str']
             preco = p['price']
             promocao = p.get("promotion") or {}
@@ -791,7 +799,7 @@ if termo:
             st.markdown(f"""
                 <div style="display: flex; align-items: flex-start; gap: 10px; margin-bottom: 0rem; flex-wrap: wrap;">
                     <div style="flex: 0 0 auto;">
-                        <img src="{imagem}" width="80" style="border-top-left-radius: 6px; border-top-right-radius: 6px; border-bottom-left-radius: 0; border-bottom-right-radius: 0; display: block;"/>
+                        <img src="{imagem}" width="80" style="background-color: white; border-top-left-radius: 6px; border-top-right-radius: 6px; border-bottom-left-radius: 0; border-bottom-right-radius: 0; display: block;"/>
                         <img src="{LOGO_NAGUMO_URL}" width="80" style="border-top-left-radius: 0; border-top-right-radius: 0; border-bottom-left-radius: 6px; border-bottom-right-radius: 6px; border: 1.5px solid white; padding: 0px; display: block;"/>
                     </div>
                     <div style="flex: 1; word-break: break-word; overflow-wrap: anywhere;">
