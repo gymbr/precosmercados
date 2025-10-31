@@ -641,8 +641,7 @@ if termo:
         with col1:
                     st.markdown(f"""
                         <h5 style="display: flex; align-items: center; justify-content: center;">
-                        <img src="{LOGO_SHIBATA_URL}" width="80" style="margin-right:8px; background-color: white; border-radius: 4px; padding: 3px;"/>
-                        Shibata
+                        <img src="{LOGO_SHIBATA_URL}" width="80" alt="Shibata" style="margin-right:8px; background-color: white; border-radius: 4px; padding: 3px;"/>
                         </h5>
                     """, unsafe_allow_html=True)
                     st.markdown(f"<small>🔎 {len(produtos_shibata_ordenados)} produto(s) encontrado(s).</small>", unsafe_allow_html=True)
@@ -746,7 +745,7 @@ if termo:
                                 <div class='product-image'>
                                     <img src='{imagem_url}' width='80' style='border-top-left-radius: 6px; border-top-right-radius: 6px; border-bottom-left-radius: 0; border-bottom-right-radius: 0; display: block;'/>
                                     <img src='{LOGO_SHIBATA_URL}' width='80' 
-                                        style='background-color: white; display: block; margin: 0 auto; border-top-left-radius: 0; border-top-right-radius: 0; border-bottom-left-radius: 4px; border-bottom-right-radius: 4px; padding: 3px;'/>
+                                        style='background-color: white; display: block; margin: 0 auto; border-top: 1.5px solid black; border-top-left-radius: 0; border-top-right-radius: 0; border-bottom-left-radius: 4px; border-bottom-right-radius: 4px; padding: 3px;'/>
                                 </div>
                                 <div class='product-info'>
                                     <div style='margin-bottom: 4px;'><b>{descricao_modificada}</b></div>
