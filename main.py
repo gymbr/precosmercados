@@ -39,6 +39,14 @@ def gerar_formas_variantes(termo):
         variantes.add(termo + "s")
 
     return list(variantes)
+    
+def slugify(text):
+    """Converte um texto para um slug amigável (usado em URLs)"""
+    text = remover_acentos(text)
+    text = re.sub(r'[^a-z0-9\s-]', '', text).strip() # Remove caracteres especiais, exceto hífens e espaços
+    text = re.sub(r'[-\s]+', '-', text) # Substitui espaços e múltiplos hífens por um único hífen
+    return text
+
 def calcular_precos_papel(descricao, preco_total):
     desc_minus = descricao.lower()
     match_leve = re.search(r'leve\s*(\d+)', desc_minus)
@@ -488,6 +496,18 @@ if termo:
         for p in produtos_shibata_filtrados:
             if not p.get("disponivel", True):
                 continue
+            
+            # --- Criação da URL do Shibata ---
+            # CORREÇÃO: Usando 'produto_id' conforme solicitado pelo usuário.
+            produto_id = p.get('produto_id') 
+            produto_nome_url = slugify(p.get('descricao', p.get('nome', 'produto')))
+            if produto_id:
+                p['url_shibata'] = f"https://www.loja.shibata.com.br/produto/{produto_id}/{produto_nome_url}"
+            else:
+                p['url_shibata'] = "https://www.loja.shibata.com.br/" # Fallback
+            # ---------------------------------
+            
+            
             preco = float(p.get('preco') or 0)
             em_oferta = p.get('em_oferta', False)
             oferta_info = p.get('oferta') or {}
@@ -516,8 +536,8 @@ if termo:
                         quantidade /= 1000
                         unidade = "l"
                     if quantidade > 0:
-                        preco_unidade_val = preco_total / quantidade
-                        preco_unidade_str += f"<br><span style='color:gray;'>R$ {preco_unidade_val:.2f}/{unidade}</span>"
+                        preco_unitario = preco_total / quantidade
+                        preco_unidade_str += f"<br><span style='color:gray;'>R$ {preco_unitario:.2f}/{unidade}</span>"
                 except:
                     pass
 
@@ -610,6 +630,13 @@ if termo:
             texto = f"{produto['name']} {produto.get('description', '')}"
             texto_normalizado = remover_acentos(texto)
             if all(p in texto_normalizado for p in palavras_termo):
+                # --- Criação da URL do Nagumo ---
+                sku = produto.get('sku')
+                if sku:
+                    produto['url_nagumo'] = f"https://www.nagumo.com/p/{sku}"
+                else:
+                    produto['url_nagumo'] = "https://www.nagumo.com/" # Fallback
+                # ---------------------------------
                 produtos_nagumo_filtrados.append(produto)
 
         for p in produtos_nagumo_filtrados:
@@ -661,7 +688,8 @@ if termo:
                         oferta_info = p.get('oferta') or {}
                         preco_oferta = oferta_info.get('preco_oferta')
                         preco_antigo = oferta_info.get('preco_antigo')
-                        
+                        url_produto = p.get('url_shibata', '#') # Obtém a URL criada
+
                         # AJUSTE 1: Usar imagem padrão se 'imagem' estiver vazia
                         imagem_url = f"https://produto-assets-vipcommerce-com-br.br-se1.magaluobjects.com/500x500/{imagem}" if imagem else DEFAULT_IMAGE_URL
                         
@@ -746,16 +774,16 @@ if termo:
                         else:
                             preco_html = f"<div><b>{preco_formatado}</b></div>"
 
-                        # Renderização final do produto
+                        # Renderização final do produto com hiperlink na imagem
                         st.markdown(f"""
                             <div class='product-container'>
-                                <div class='product-image'>
+                                <a href='{url_produto}' target='_blank' class='product-image' style='text-decoration:none;'>
                                     <img src='{imagem_url}' width='80' style='background-color: white; border-top-left-radius: 6px; border-top-right-radius: 6px; border-bottom-left-radius: 0; border-bottom-right-radius: 0; display: block;'/>
                                     <img src='{LOGO_SHIBATA_URL}' width='80' 
                                         style='background-color: white; display: block; margin: 0 auto; border-top: 1.5px solid black; border-top-left-radius: 0; border-top-right-radius: 0; border-bottom-left-radius: 4px; border-bottom-right-radius: 4px; padding: 3px;'/>
-                                </div>
+                                </a>
                                 <div class='product-info'>
-                                    <div style='margin-bottom: 4px;'><b>{descricao_modificada}</b></div>
+                                    <div style='margin-bottom: 4px;'><a href='{url_produto}' target='_blank' style='text-decoration:none; color:inherit;'><b>{descricao_modificada}</b></a></div>
                                     <div style='font-size:0.85em;'>{preco_html}</div>
                                     <div style='font-size:0.85em;'>{preco_info_extra}</div>
                                 </div>
@@ -779,6 +807,7 @@ if termo:
             # AJUSTE 3: Lógica para usar imagem padrão se 'photosUrl' estiver vazia ou for None
             photos_list = p.get('photosUrl')
             imagem = photos_list[0] if photos_list else DEFAULT_IMAGE_URL
+            url_produto = p.get('url_nagumo', '#') # Obtém a URL criada
 
             preco_unitario = p['preco_unitario_str']
             preco = p['price']
@@ -795,15 +824,15 @@ if termo:
                     <span style='text-decoration: line-through; color: gray;'>R$ {preco:.2f}</span>
                 """
             else:
-                preco_html = f"R$ {preco:.2f}"
+                preco_html = f"<span style='font-weight: bold; font-size: 1rem;'>R$ {preco:.2f}</span>"
             st.markdown(f"""
                 <div style="display: flex; align-items: flex-start; gap: 10px; margin-bottom: 0rem; flex-wrap: wrap;">
-                    <div style="flex: 0 0 auto;">
+                    <a href='{url_produto}' target='_blank' style='flex: 0 0 auto; text-decoration:none;'>
                         <img src="{imagem}" width="80" style="background-color: white; border-top-left-radius: 6px; border-top-right-radius: 6px; border-bottom-left-radius: 0; border-bottom-right-radius: 0; display: block;"/>
                         <img src="{LOGO_NAGUMO_URL}" width="80" style="border-top-left-radius: 0; border-top-right-radius: 0; border-bottom-left-radius: 6px; border-bottom-right-radius: 6px; border: 1.5px solid white; padding: 0px; display: block;"/>
-                    </div>
+                    </a>
                     <div style="flex: 1; word-break: break-word; overflow-wrap: anywhere;">
-                        <strong>{p['titulo_exibido']}</strong><br>
+                        <a href='{url_produto}' target='_blank' style='text-decoration:none; color:inherit;'><strong>{p['titulo_exibido']}</strong></a><br>
                         <strong>{preco_html}</strong><br>
                         <div style="margin-top: 4px; font-size: 0.9em; color: #666;">{preco_unitario}</div>
                         <div style="color: gray; font-size: 0.8em;">Estoque: {p['stock']}</div>
