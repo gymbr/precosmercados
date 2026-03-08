@@ -1,7 +1,9 @@
 import streamlit as st
+import streamlit.components.v1 as components
 import requests
 import unicodedata
 import re
+import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # --- CONFIGURAÇÕES E CONSTANTES ---
@@ -291,3 +293,16 @@ if termo:
                 </div>
                 <hr class='product-separator' />
             """, unsafe_allow_html=True)
+
+    # --- FORÇAR ROLAGEM PARA O TOPO ---
+    components.html(
+        f"""
+        <script>
+            // A variável de tempo {time.time()} garante que o Streamlit recarregue o JS a cada busca
+            const cols = window.parent.document.querySelectorAll('[data-testid="stColumn"]');
+            cols.forEach(col => col.scrollTop = 0);
+        </script>
+        """,
+        height=0,
+        width=0
+    )
