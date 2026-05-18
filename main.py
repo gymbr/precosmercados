@@ -5,6 +5,7 @@ import unicodedata
 import re
 import time
 import math
+from bs4 import BeautifulSoup
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # --- CONFIGURAÇÕES E CONSTANTES ---
@@ -133,7 +134,30 @@ def extrair_info_papel_toalha(nome, descricao):
     if m_un: return None, None, int(m_un.group(1)), f"{m_un.group(1)} unidades"
     return None, None, None, None
 
-def calcular_preco_unitario_nagumo(preco_valor, nome, descricao, medida_venda, is_weighable=False):
+def extrair_descricao_remota_nagumo(url_produto):
+    """Acessa a URL interna do produto no Nagumo para capturar a especificação detalhada"""
+    if not url_produto or url_produto == '#': return ""
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+    }
+    try:
+        # Reutiliza os cookies fixados da sessão global para manter a consistência com a loja selecionada
+        cookies_fixos = {
+            "dw_store": ID_LOJA,
+            "hasSelectedStore": ID_LOJA,
+            "selectedStore": ID_LOJA,
+            "meunagumo_store": ID_LOJA
+        }
+        response = NAGUMO_SESSION.get(url_produto, headers=headers, cookies=cookies_fixos, timeout=6)
+        if response.status_code == 200:
+            soup = BeautifulSoup(response.text, "html.parser")
+            tag_descricao = soup.find("p", class_="product-detail__longDescription")
+            if tag_descricao:
+                return tag_descricao.get_text(strip=True)
+    except: pass
+    return ""
+
+def calcular_preco_unitario_nagumo(preco_valor, nome, descricao, medida_venda, is_weighable=False, link_produto='#'):
     nome_lower = nome.lower()
     nome_norm = remover_acentos(nome_lower)
     
@@ -157,7 +181,13 @@ def calcular_preco_unitario_nagumo(preco_valor, nome, descricao, medida_venda, i
 
         rolos, metros = extrair_rolos_metros(nome_lower)
         
-        # Só consulta a descrição se faltar alguma informação no título
+        # Condição de Contingência: Se for papel higiênico e NÃO tiver metros no título, acessa o link individual
+        if not metros and link_produto != '#':
+            descricao_html = extrair_descricao_remota_nagumo(link_produto)
+            if descricao_html:
+                descricao = (descricao or "") + " " + descricao_html
+
+        # Consulta a descrição acumulada se faltar alguma informação
         if (not rolos or not metros) and descricao:
             desc_lower = descricao.lower()
             r_desc, m_desc = extrair_rolos_metros(desc_lower)
@@ -264,7 +294,7 @@ def buscar_nagumo_turbo_total(termo_usuario):
             all_raw_products.extend(res.get('productsSearchResult', []))
             
     vistos = set()
-    final_list = []
+    pre_final_list = []
     
     for p in all_raw_products:
         pid = p.get('id')
@@ -292,28 +322,51 @@ def buscar_nagumo_turbo_total(termo_usuario):
                     except: pass
             
             has_promo = (preco_final < preco_normal and preco_normal > 0)
-            
             is_weighable = p.get('weighable', False)
             
-            # Extrai descrições caso a API traga, buscando na string os campos mais comuns do Demandware
             descricao_item = p.get('shortDescription', '') or p.get('longDescription', '') or p.get('description', '')
             if not descricao_item:
                 descricao_item = " ".join([str(v) for k, v in p.items() if isinstance(v, str) and 'desc' in k.lower()])
 
-            label = calcular_preco_unitario_nagumo(preco_final, nome, descricao_item, p.get('productMeasureValue'), is_weighable)
             img_data = p.get('images', {}).get('large', [{}])
-            
-            final_list.append({
+            link_item = p.get('productShowFullUrl', '#')
+
+            pre_final_list.append({
                 'productName': nome,
                 'preco_final': preco_final,
                 'preco_normal': preco_normal,
                 'has_promo': has_promo,
-                'calc_label': label,
-                'sort_val': extrair_valor_unitario(label),
+                'is_weighable': is_weighable,
+                'descricao_item': descricao_item,
+                'productMeasureValue': p.get('productMeasureValue'),
                 'img_url': img_data[0].get('alt', DEFAULT_IMAGE_URL) if img_data else DEFAULT_IMAGE_URL,
-                'link': p.get('productShowFullUrl', '#')
+                'link': link_item
             })
             
+    # Processamento em lote das labels de cálculo para dar suporte às chamadas remotas concorrentes
+    final_list = []
+    with ThreadPoolExecutor(max_workers=10) as label_executor:
+        futures = {
+            label_executor.submit(
+                calcular_preco_unitario_nagumo,
+                item['preco_final'], item['productName'], item['descricao_item'], 
+                item['productMeasureValue'], item['is_weighable'], item['link']
+            ): item for item in pre_final_list
+        }
+        for future in as_completed(futures):
+            item = futures[future]
+            label = future.result()
+            final_list.append({
+                'productName': item['productName'],
+                'preco_final': item['preco_final'],
+                'preco_normal': item['preco_normal'],
+                'has_promo': item['has_promo'],
+                'calc_label': label,
+                'sort_val': extrair_valor_unitario(label),
+                'img_url': item['img_url'],
+                'link': item['link']
+            })
+
     return sorted(final_list, key=lambda x: x['sort_val'])
 
 def buscar_pagina_shibata(termo, pagina):
