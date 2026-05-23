@@ -446,7 +446,20 @@ if termo:
                     val_metro, _ = calcular_precos_papel(desc, preco_final)
                     _, val_folha = calcular_preco_papel_toalha(desc, preco_final)
                     val_unidade, _ = calcular_preco_unidade(desc, preco_final)
-                    
+
+                    # Fallback: extrai preço unitário do preco_str quando a descrição não tem o peso
+                    # Ex: "R$ 1,80/0,2kg" → 1.80 / 0.2 = 9.00/kg (preço correto para ordenação)
+                    if val_unidade is None:
+                        match_ps = re.search(r"/\s*([\d.,]+)\s*(kg|g|l|ml)", p['preco_str'].lower())
+                        if match_ps:
+                            try:
+                                q = float(match_ps.group(1).replace(",", "."))
+                                u = match_ps.group(2).lower()
+                                if u == "g": q /= 1000
+                                elif u == "ml": q /= 1000
+                                if q > 0: val_unidade = preco_final / q
+                            except: pass
+
                     if 'papel toalha' in remover_acentos(termo).lower() and val_folha: p['sort_val'] = val_folha
                     elif 'papel higienico' in remover_acentos(termo).lower() and val_metro: p['sort_val'] = val_metro
                     else: p['sort_val'] = val_unidade or preco_final
@@ -602,4 +615,4 @@ if termo:
         """,
         height=0,
         width=0,
-            )
+        )
