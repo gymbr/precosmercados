@@ -447,8 +447,8 @@ if termo:
                     _, val_folha = calcular_preco_papel_toalha(desc, preco_final)
                     val_unidade, _ = calcular_preco_unidade(desc, preco_final)
 
-                    # Fallback: extrai preço unitário do preco_str quando a descrição não tem o peso
-                    # Ex: "R$ 1,80/0,2kg" → 1.80 / 0.2 = 9.00/kg (preço correto para ordenação)
+                    # Fallback 1: extrai preco unitario do preco_str quando a descricao nao tem o peso
+                    # Ex: "R$ 1,80/0,2kg" -> 1.80 / 0.2 = 9.00/kg (preco correto para ordenacao)
                     if val_unidade is None:
                         match_ps = re.search(r"/\s*([\d.,]+)\s*(kg|g|l|ml)", p['preco_str'].lower())
                         if match_ps:
@@ -460,9 +460,26 @@ if termo:
                                 if q > 0: val_unidade = preco_final / q
                             except: pass
 
-                    if 'papel toalha' in remover_acentos(termo).lower() and val_folha: p['sort_val'] = val_folha
-                    elif 'papel higienico' in remover_acentos(termo).lower() and val_metro: p['sort_val'] = val_metro
-                    else: p['sort_val'] = val_unidade or preco_final
+                    # Fallback 2: itens contaveis na descricao (ovos, unidades, duzia...)
+                    # Ex: "30 Unidades" -> 9,99 / 30 = 0,333/unidade
+                    val_item = None
+                    if re.search(r'1\s*d[uú]zia', desc.lower()):
+                        val_item = preco_final / 12
+                    else:
+                        match_contavel = re.search(r'(\d+)\s*(unidades?|ovos?)\b', desc.lower())
+                        if match_contavel:
+                            try:
+                                qtd = int(match_contavel.group(1))
+                                if qtd > 1:
+                                    val_item = preco_final / qtd
+                            except: pass
+
+                    # Seleciona o menor valor calculado disponivel, independente da categoria (kg, L, m, folha...)
+                    # val_item entra apenas como ultimo recurso: evita misturar preco/unidade com preco/metro ou preco/folha
+                    candidatos = [v for v in [val_metro, val_folha, val_unidade] if v is not None and v > 0]
+                    if not candidatos and val_item is not None and val_item > 0:
+                        candidatos = [val_item]
+                    p['sort_val'] = min(candidatos) if candidatos else preco_final
                     
                     shibata_final.append(p)
         shibata_final = sorted(shibata_final, key=lambda x: x['sort_val'] or 999)
@@ -517,12 +534,19 @@ if termo:
                     _, preco_por_unidade_str = calcular_preco_unidade(descricao, preco_total)
                     if preco_por_unidade_str: preco_info_extra += f"<div style='color:gray; font-size:0.75em;'>{preco_por_unidade_str}</div>"
 
-            if 'ovo' in remover_acentos(descricao).lower():
-                match_ovo = re.search(r'(\d+)\s*(unidades|un|ovos|c/|com)', descricao.lower())
-                if match_ovo and int(match_ovo.group(1)) > 0:
-                    preco_info_extra += f"<div style='color:gray; font-size:0.75em;'>R$ {preco_total / int(match_ovo.group(1)):.2f}/unidade</div>"
-                elif re.search(r'1\s*d[uú]zia', descricao.lower()):
-                    preco_info_extra += f"<div style='color:gray; font-size:0.75em;'>R$ {preco_total / 12:.2f}/unidade (dúzia)</div>"
+            # Preco por unidade contavel: ovos, forminhas, sacos, qualquer item com "X unidades" na descricao
+            # So exibe se ainda nao ha nenhum preco extra calculado (evita duplicar com kg/L/metro/folha)
+            if not preco_info_extra:
+                if re.search(r'1\s*d[uú]zia', descricao.lower()):
+                    preco_info_extra += f"<div style='color:gray; font-size:0.75em;'>R$ {preco_total / 12:.4f}/unidade (duzia)</div>"
+                else:
+                    match_contavel = re.search(r'(\d+)\s*(unidades?|ovos?)\b', descricao.lower())
+                    if match_contavel:
+                        try:
+                            qtd = int(match_contavel.group(1))
+                            if qtd > 1:
+                                preco_info_extra += f"<div style='color:gray; font-size:0.75em;'>R$ {preco_total / qtd:.4f}/unidade</div>"
+                        except: pass
 
             oferta = p.get('oferta') or {}
             if p.get('em_oferta') and oferta.get('preco_oferta') and oferta.get('preco_antigo'):
@@ -615,4 +639,4 @@ if termo:
         """,
         height=0,
         width=0,
-        )
+                                              )
