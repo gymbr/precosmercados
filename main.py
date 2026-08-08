@@ -709,14 +709,38 @@ if termo:
         f"""
         <script>
             /* {termo} | {time.time()} */
+            function aplicarRolagem() {{
+                const doc = window.parent.document;
+                const panels = doc.querySelectorAll('[data-baseweb="tab-panel"]');
+                panels.forEach(function(panel) {{
+                    panel.style.setProperty('overflow-y', 'auto', 'important');
+                    panel.style.setProperty('-webkit-overflow-scrolling', 'touch', 'important');
+                    panel.style.setProperty('touch-action', 'pan-y', 'important');
+                    panel.style.setProperty('height', 'calc(100vh - 130px)', 'important');
+                    panel.style.setProperty('max-height', 'calc(100vh - 130px)', 'important');
+                    panel.style.setProperty('display', 'block', 'important');
+                }});
+
+                /* Alguns temas do Streamlit colocam o conteúdo real dentro de um
+                   wrapper (stVerticalBlock) que herda altura automática do próprio
+                   conteúdo — isso força o pai (tab-panel) a crescer junto e nunca
+                   estourar o limite, então nunca aparece scroll. Neutralizamos isso. */
+                const wrappers = doc.querySelectorAll('[data-baseweb="tab-panel"] > div');
+                wrappers.forEach(function(w) {{
+                    w.style.setProperty('height', 'auto', 'important');
+                    w.style.setProperty('min-height', '0', 'important');
+                }});
+            }}
             function scrollToTop() {{
                 const panels = window.parent.document.querySelectorAll('[data-baseweb="tab-panel"]');
                 panels.forEach(function(panel) {{ panel.scrollTop = 0; }});
             }}
+            aplicarRolagem();
             scrollToTop();
-            setTimeout(scrollToTop, 150);
-            setTimeout(scrollToTop, 400);
-            setTimeout(scrollToTop, 800);
+            setTimeout(function() {{ aplicarRolagem(); scrollToTop(); }}, 150);
+            setTimeout(function() {{ aplicarRolagem(); scrollToTop(); }}, 400);
+            setTimeout(function() {{ aplicarRolagem(); scrollToTop(); }}, 800);
+            setTimeout(function() {{ aplicarRolagem(); }}, 1500);
         </script>
         """,
         height=0,
