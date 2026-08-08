@@ -722,6 +722,52 @@ if termo:
             setTimeout(scrollToTop, 150);
             setTimeout(scrollToTop, 400);
             setTimeout(scrollToTop, 800);
+
+            /* Força a cor amarela na linha indicadora nativa da aba ativa,
+               não importa o nome/atributo interno usado pelo Streamlit */
+            function fixIndicatorColor() {{
+                const doc = window.parent.document;
+                const tablist = doc.querySelector('[role="tablist"]');
+                if (!tablist) return;
+                const tabs = Array.from(tablist.querySelectorAll('[role="tab"]'));
+                Array.from(tablist.children).forEach(function(child) {{
+                    if (!tabs.includes(child)) {{
+                        /* Este filho não é um botão de aba: é o indicador nativo */
+                        child.style.setProperty('background-color', '#FFD600', 'important');
+                        child.style.setProperty('border-color', '#FFD600', 'important');
+                        child.style.setProperty('color', '#FFD600', 'important');
+                    }}
+                }});
+            }}
+            fixIndicatorColor();
+            setTimeout(fixIndicatorColor, 150);
+            setTimeout(fixIndicatorColor, 400);
+            setTimeout(fixIndicatorColor, 800);
+
+            /* Reaplica sempre que o usuário clicar em outra aba (troca não recarrega o iframe) */
+            (function attachTabClickListeners() {{
+                const doc = window.parent.document;
+                const tablist = doc.querySelector('[role="tablist"]');
+                if (!tablist) return;
+                tablist.querySelectorAll('[role="tab"]').forEach(function(tabBtn) {{
+                    tabBtn.addEventListener('click', function() {{
+                        setTimeout(fixIndicatorColor, 50);
+                        setTimeout(fixIndicatorColor, 200);
+                        setTimeout(fixIndicatorColor, 500);
+                    }});
+                }});
+            }})();
+
+            /* Observa mudanças no DOM da barra de abas (troca de estilo/atributos) e reaplica */
+            (function observeTablist() {{
+                const doc = window.parent.document;
+                const tablist = doc.querySelector('[role="tablist"]');
+                if (!tablist || !window.parent.MutationObserver) return;
+                const observer = new window.parent.MutationObserver(function() {{
+                    fixIndicatorColor();
+                }});
+                observer.observe(tablist, {{ attributes: true, childList: true, subtree: true }});
+            }})();
         </script>
         """,
         height=0,
