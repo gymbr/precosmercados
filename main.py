@@ -546,7 +546,7 @@ st.markdown("""
         }
 
         /* Barra de abas (botões Todos / Nagumo / Shibata) — fica fixa */
-        div[data-testid="stTabs"] [role="tablist"] {
+        [role="tablist"] {
             position: sticky;
             top: 0;
             z-index: 100;
@@ -558,7 +558,7 @@ st.markdown("""
         }
 
         /* Todas as abas — aparência padrão (inativa) */
-        div[data-testid="stTabs"] [role="tab"] {
+        [role="tab"] {
             color: #888 !important;
             font-weight: 500 !important;
             font-size: 0.78rem !important;
@@ -571,7 +571,7 @@ st.markdown("""
         }
 
         /* Aba selecionada — amarelo, destaque total */
-        div[data-testid="stTabs"] [role="tab"][aria-selected="true"] {
+        [role="tab"][aria-selected="true"] {
             color: #FFD600 !important;
             font-weight: 800 !important;
             background: rgba(255, 214, 0, 0.1) !important;
@@ -580,24 +580,28 @@ st.markdown("""
             margin-bottom: -2px !important;
         }
 
-        /* Conteúdo de cada aba — rola independentemente
-           (o Streamlit removeu o BaseWeb: o painel agora é a div com
-           role="tabpanel", sem o atributo data-baseweb) */
-        div[data-testid="stTabs"] [role="tabpanel"] {
+        /* Linha indicadora embaixo da aba ativa (override padrão Streamlit) */
+        [data-baseweb="tab-highlight"] {
+            background-color: #FFD600 !important;
+            height: 3px !important;
+            transition: none !important;
+            animation: none !important;
+        }
+
+        /* Conteúdo de cada aba — rola independentemente */
+        [role="tabpanel"] {
             overflow-y: auto !important;
-            -webkit-overflow-scrolling: touch !important;
-            touch-action: pan-y !important;
+            -webkit-overflow-scrolling: touch;
             /* Altura = tela - título - campo de busca - barra de abas */
-            height: calc(100vh - 130px) !important;
             max-height: calc(100vh - 130px) !important;
             padding: 6px 4px 12px 4px;
             scrollbar-width: thin;
             scrollbar-color: gray transparent;
         }
-        div[data-testid="stTabs"] [role="tabpanel"]::-webkit-scrollbar { width: 6px; background: transparent; }
-        div[data-testid="stTabs"] [role="tabpanel"]::-webkit-scrollbar-track { background: transparent; }
-        div[data-testid="stTabs"] [role="tabpanel"]::-webkit-scrollbar-thumb { background-color: gray; border-radius: 3px; }
-        div[data-testid="stTabs"] [role="tabpanel"]::-webkit-scrollbar-thumb:hover { background-color: #aaa; }
+        [role="tabpanel"]::-webkit-scrollbar { width: 6px; background: transparent; }
+        [role="tabpanel"]::-webkit-scrollbar-track { background: transparent; }
+        [role="tabpanel"]::-webkit-scrollbar-thumb { background-color: gray; border-radius: 3px; }
+        [role="tabpanel"]::-webkit-scrollbar-thumb:hover { background-color: #aaa; }
     </style>
 """, unsafe_allow_html=True)
 
@@ -706,27 +710,14 @@ if termo:
         f"""
         <script>
             /* {termo} | {time.time()} */
-            function aplicarRolagem() {{
-                const doc = window.parent.document;
-                const panels = doc.querySelectorAll('div[data-testid="stTabs"] [role="tabpanel"]');
-                panels.forEach(function(panel) {{
-                    panel.style.setProperty('overflow-y', 'auto', 'important');
-                    panel.style.setProperty('-webkit-overflow-scrolling', 'touch', 'important');
-                    panel.style.setProperty('touch-action', 'pan-y', 'important');
-                    panel.style.setProperty('height', 'calc(100vh - 130px)', 'important');
-                    panel.style.setProperty('max-height', 'calc(100vh - 130px)', 'important');
-                }});
-            }}
             function scrollToTop() {{
-                const doc = window.parent.document;
-                const panels = doc.querySelectorAll('div[data-testid="stTabs"] [role="tabpanel"]');
+                const panels = window.parent.document.querySelectorAll('[role="tabpanel"]');
                 panels.forEach(function(panel) {{ panel.scrollTop = 0; }});
             }}
-            aplicarRolagem();
             scrollToTop();
-            setTimeout(function() {{ aplicarRolagem(); scrollToTop(); }}, 150);
-            setTimeout(function() {{ aplicarRolagem(); scrollToTop(); }}, 400);
-            setTimeout(function() {{ aplicarRolagem(); scrollToTop(); }}, 800);
+            setTimeout(scrollToTop, 150);
+            setTimeout(scrollToTop, 400);
+            setTimeout(scrollToTop, 800);
         </script>
         """,
         height=0,
