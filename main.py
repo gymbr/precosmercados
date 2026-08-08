@@ -584,7 +584,9 @@ st.markdown("""
         [data-baseweb="tab-highlight"],
         [data-testid="stTabsIndicator"],
         [class*="TabHighlight"],
-        [class*="tab-highlight"] {
+        [class*="tab-highlight"],
+        .react-aria-SelectionIndicator,
+        [data-selected] .react-aria-SelectionIndicator {
             background-color: #FFD600 !important;
             border-color: #FFD600 !important;
             height: 3px !important;
