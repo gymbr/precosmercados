@@ -570,19 +570,23 @@ st.markdown("""
             transition: color 0.15s, background 0.15s;
         }
 
-        /* Aba selecionada — amarelo, destaque total */
+        /* Aba selecionada — amarelo, destaque total (sem borda própria, usa só o indicador nativo abaixo) */
         [role="tab"][aria-selected="true"] {
             color: #FFD600 !important;
             font-weight: 800 !important;
             background: rgba(255, 214, 0, 0.1) !important;
             border: 1px solid #444 !important;
-            border-bottom: 3px solid #FFD600 !important;
-            margin-bottom: -2px !important;
+            border-bottom: none !important;
         }
 
-        /* Linha indicadora embaixo da aba ativa (override padrão Streamlit) */
-        [data-baseweb="tab-highlight"] {
+        /* Linha indicadora embaixo da aba ativa — recolore o indicador nativo do Streamlit
+           (o nome do atributo interno muda entre versões, por isso cobrimos os possíveis seletores) */
+        [data-baseweb="tab-highlight"],
+        [data-testid="stTabsIndicator"],
+        [class*="TabHighlight"],
+        [class*="tab-highlight"] {
             background-color: #FFD600 !important;
+            border-color: #FFD600 !important;
             height: 3px !important;
             transition: none !important;
             animation: none !important;
