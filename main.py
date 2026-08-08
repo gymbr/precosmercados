@@ -525,6 +525,10 @@ st.markdown("""
         /* ===== ABAS FIXAS + CONTEÚDO ROLÁVEL ===== */
 
         /* Impede que a página inteira role */
+        html, body {
+            overflow: hidden !important;
+            height: 100% !important;
+        }
         section[data-testid="stMain"] {
             overflow: hidden !important;
             height: 100vh !important;
@@ -590,8 +594,12 @@ st.markdown("""
 
         /* Conteúdo de cada aba — rola independentemente */
         [data-baseweb="tab-panel"] {
-            overflow-y: auto !important;
-            /* Altura = tela - título - campo de busca - barra de abas */
+            overflow-y: scroll !important;
+            -webkit-overflow-scrolling: touch !important;
+            touch-action: pan-y !important;
+            overscroll-behavior: contain;
+            /* Altura fixa (não max-height) = tela - título - campo de busca - barra de abas */
+            height: calc(100vh - 130px) !important;
             max-height: calc(100vh - 130px) !important;
             padding: 6px 4px 12px 4px;
             scrollbar-width: thin;
