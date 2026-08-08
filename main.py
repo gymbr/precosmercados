@@ -528,22 +528,6 @@ st.markdown("""
         section[data-testid="stMain"] {
             overflow: hidden !important;
             height: 100vh !important;
-            display: flex !important;
-            flex-direction: column !important;
-        }
-
-        /* O container principal precisa ocupar o espaço e permitir que os filhos encolham */
-        .block-container {
-            display: flex !important;
-            flex-direction: column !important;
-            flex: 1 1 auto !important;
-            min-height: 0 !important;
-        }
-
-        /* Wrapper vertical que o Streamlit cria em torno das abas — também precisa encolher */
-        .block-container > div,
-        .block-container [data-testid="stVerticalBlock"] {
-            min-height: 0 !important;
         }
 
         /* Barra de pesquisa fica acima das abas — posição fixa via fluxo normal */
@@ -557,13 +541,8 @@ st.markdown("""
 
         /* Container das abas */
         .stTabs {
-            display: flex !important;
-            flex-direction: column !important;
-            flex: 1 1 auto !important;
-            min-height: 0 !important;
-        }
-        .stTabs > div {
-            min-height: 0 !important;
+            display: flex;
+            flex-direction: column;
         }
 
         /* Barra de abas (botões Todos / Nagumo / Shibata) — fica fixa */
@@ -612,19 +591,11 @@ st.markdown("""
         /* Conteúdo de cada aba — rola independentemente */
         [data-baseweb="tab-panel"] {
             overflow-y: auto !important;
-            -webkit-overflow-scrolling: touch;
-            flex: 1 1 auto !important;
-            min-height: 0 !important;
-            /* Altura de reserva para navegadores sem contexto flex correto */
+            /* Altura = tela - título - campo de busca - barra de abas */
             max-height: calc(100vh - 130px) !important;
             padding: 6px 4px 12px 4px;
             scrollbar-width: thin;
             scrollbar-color: gray transparent;
-        }
-
-        /* O conteúdo interno do painel não pode impor sua própria altura mínima */
-        [data-baseweb="tab-panel"] [data-testid="stVerticalBlock"] {
-            min-height: 0 !important;
         }
         [data-baseweb="tab-panel"]::-webkit-scrollbar { width: 6px; background: transparent; }
         [data-baseweb="tab-panel"]::-webkit-scrollbar-track { background: transparent; }
