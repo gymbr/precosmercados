@@ -546,7 +546,7 @@ st.markdown("""
         }
 
         /* Barra de abas (botões Todos / Nagumo / Shibata) — fica fixa */
-        [data-baseweb="tab-list"] {
+        div[data-testid="stTabs"] [role="tablist"] {
             position: sticky;
             top: 0;
             z-index: 100;
@@ -558,7 +558,7 @@ st.markdown("""
         }
 
         /* Todas as abas — aparência padrão (inativa) */
-        [data-baseweb="tab"] {
+        div[data-testid="stTabs"] [role="tab"] {
             color: #888 !important;
             font-weight: 500 !important;
             font-size: 0.78rem !important;
@@ -571,7 +571,7 @@ st.markdown("""
         }
 
         /* Aba selecionada — amarelo, destaque total */
-        [aria-selected="true"][data-baseweb="tab"] {
+        div[data-testid="stTabs"] [role="tab"][aria-selected="true"] {
             color: #FFD600 !important;
             font-weight: 800 !important;
             background: rgba(255, 214, 0, 0.1) !important;
@@ -580,27 +580,24 @@ st.markdown("""
             margin-bottom: -2px !important;
         }
 
-        /* Linha indicadora embaixo da aba ativa (override padrão Streamlit) */
-        [data-baseweb="tab-highlight"] {
-            background-color: #FFD600 !important;
-            height: 3px !important;
-            transition: none !important;
-            animation: none !important;
-        }
-
-        /* Conteúdo de cada aba — rola independentemente */
-        [data-baseweb="tab-panel"] {
+        /* Conteúdo de cada aba — rola independentemente
+           (o Streamlit removeu o BaseWeb: o painel agora é a div com
+           role="tabpanel", sem o atributo data-baseweb) */
+        div[data-testid="stTabs"] [role="tabpanel"] {
             overflow-y: auto !important;
+            -webkit-overflow-scrolling: touch !important;
+            touch-action: pan-y !important;
             /* Altura = tela - título - campo de busca - barra de abas */
+            height: calc(100vh - 130px) !important;
             max-height: calc(100vh - 130px) !important;
             padding: 6px 4px 12px 4px;
             scrollbar-width: thin;
             scrollbar-color: gray transparent;
         }
-        [data-baseweb="tab-panel"]::-webkit-scrollbar { width: 6px; background: transparent; }
-        [data-baseweb="tab-panel"]::-webkit-scrollbar-track { background: transparent; }
-        [data-baseweb="tab-panel"]::-webkit-scrollbar-thumb { background-color: gray; border-radius: 3px; }
-        [data-baseweb="tab-panel"]::-webkit-scrollbar-thumb:hover { background-color: #aaa; }
+        div[data-testid="stTabs"] [role="tabpanel"]::-webkit-scrollbar { width: 6px; background: transparent; }
+        div[data-testid="stTabs"] [role="tabpanel"]::-webkit-scrollbar-track { background: transparent; }
+        div[data-testid="stTabs"] [role="tabpanel"]::-webkit-scrollbar-thumb { background-color: gray; border-radius: 3px; }
+        div[data-testid="stTabs"] [role="tabpanel"]::-webkit-scrollbar-thumb:hover { background-color: #aaa; }
     </style>
 """, unsafe_allow_html=True)
 
@@ -711,28 +708,18 @@ if termo:
             /* {termo} | {time.time()} */
             function aplicarRolagem() {{
                 const doc = window.parent.document;
-                const panels = doc.querySelectorAll('[data-baseweb="tab-panel"]');
+                const panels = doc.querySelectorAll('div[data-testid="stTabs"] [role="tabpanel"]');
                 panels.forEach(function(panel) {{
                     panel.style.setProperty('overflow-y', 'auto', 'important');
                     panel.style.setProperty('-webkit-overflow-scrolling', 'touch', 'important');
                     panel.style.setProperty('touch-action', 'pan-y', 'important');
                     panel.style.setProperty('height', 'calc(100vh - 130px)', 'important');
                     panel.style.setProperty('max-height', 'calc(100vh - 130px)', 'important');
-                    panel.style.setProperty('display', 'block', 'important');
-                }});
-
-                /* Alguns temas do Streamlit colocam o conteúdo real dentro de um
-                   wrapper (stVerticalBlock) que herda altura automática do próprio
-                   conteúdo — isso força o pai (tab-panel) a crescer junto e nunca
-                   estourar o limite, então nunca aparece scroll. Neutralizamos isso. */
-                const wrappers = doc.querySelectorAll('[data-baseweb="tab-panel"] > div');
-                wrappers.forEach(function(w) {{
-                    w.style.setProperty('height', 'auto', 'important');
-                    w.style.setProperty('min-height', '0', 'important');
                 }});
             }}
             function scrollToTop() {{
-                const panels = window.parent.document.querySelectorAll('[data-baseweb="tab-panel"]');
+                const doc = window.parent.document;
+                const panels = doc.querySelectorAll('div[data-testid="stTabs"] [role="tabpanel"]');
                 panels.forEach(function(panel) {{ panel.scrollTop = 0; }});
             }}
             aplicarRolagem();
@@ -740,7 +727,6 @@ if termo:
             setTimeout(function() {{ aplicarRolagem(); scrollToTop(); }}, 150);
             setTimeout(function() {{ aplicarRolagem(); scrollToTop(); }}, 400);
             setTimeout(function() {{ aplicarRolagem(); scrollToTop(); }}, 800);
-            setTimeout(function() {{ aplicarRolagem(); }}, 1500);
         </script>
         """,
         height=0,
