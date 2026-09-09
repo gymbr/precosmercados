@@ -5,6 +5,7 @@ import unicodedata
 import re
 import time
 import math
+import json
 from bs4 import BeautifulSoup
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
@@ -611,10 +612,45 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
+# --- CACHE DE ESTADO DO EMBED (persiste a pesquisa ativa por 2 dias) ---
+CACHE_TTL_MS = 2 * 24 * 60 * 60 * 1000  # 2 dias
+
+# Roda o mais cedo possível: se a URL do embed não tem "?q=", tenta recuperar
+# a última pesquisa salva no localStorage do próprio embed (não expirada) e
+# refaz a navegação já com o termo, evitando que o usuário precise digitar
+# de novo ao voltar para o site depois de fechar por engano.
+components.html(f"""
+    <script>
+        (function() {{
+            try {{
+                var CACHE_KEY = 'precosMercadosEmbedCache';
+                var TTL_MS = {CACHE_TTL_MS};
+                var url = new URL(window.location.href);
+                if (!url.searchParams.get('q')) {{
+                    var raw = window.localStorage.getItem(CACHE_KEY);
+                    if (raw) {{
+                        var cache = JSON.parse(raw);
+                        if (cache && cache.termo && (Date.now() - cache.timestamp) < TTL_MS) {{
+                            url.searchParams.set('q', cache.termo);
+                            window.location.replace(url.toString());
+                        }} else {{
+                            window.localStorage.removeItem(CACHE_KEY);
+                        }}
+                    }}
+                }}
+            }} catch (e) {{}}
+        }})();
+    </script>
+""", height=0, width=0)
+
+termo_da_url = st.query_params.get("q", "").strip()
+
 st.markdown("<h6>🛒 Preços Mercados</h6>", unsafe_allow_html=True)
-termo = st.text_input("🔎 Digite o nome do produto:", "Banana").strip()
+termo = st.text_input("🔎 Digite o nome do produto:", termo_da_url or "Banana").strip()
 
 if termo:
+    if st.query_params.get("q", "") != termo:
+        st.query_params["q"] = termo
     termos_busca = gerar_formas_variantes(remover_acentos(termo))
     palavras_chave = remover_acentos(termo).split()
 
@@ -716,6 +752,62 @@ if termo:
         f"""
         <script>
             /* {termo} | {time.time()} */
+
+            /* --- CACHE DE ESTADO DO EMBED (salva pesquisa + aba ativa por 2 dias) --- */
+            (function() {{
+                try {{
+                    var CACHE_KEY = 'precosMercadosEmbedCache';
+                    var termoAtual = {json.dumps(termo)};
+
+                    function lerCache() {{
+                        var raw = window.localStorage.getItem(CACHE_KEY);
+                        return raw ? JSON.parse(raw) : null;
+                    }}
+
+                    function salvarCache(tabIndex) {{
+                        var atual = lerCache() || {{}};
+                        var payload = {{
+                            termo: termoAtual,
+                            tab: (typeof tabIndex === 'number') ? tabIndex : atual.tab,
+                            timestamp: Date.now()
+                        }};
+                        window.localStorage.setItem(CACHE_KEY, JSON.stringify(payload));
+                    }}
+
+                    /* Salva/renova o cache toda vez que essa busca é exibida */
+                    salvarCache();
+
+                    /* Restaura a aba salva assim que as abas existirem (só uma vez por carregamento) */
+                    if (!window.__precosMercadosAbaRestaurada) {{
+                        window.__precosMercadosAbaRestaurada = true;
+                        var cache = lerCache();
+                        if (cache && typeof cache.tab === 'number') {{
+                            setTimeout(function() {{
+                                var doc = window.parent.document;
+                                var tablist = doc.querySelector('[role="tablist"]');
+                                if (tablist) {{
+                                    var tabs = tablist.querySelectorAll('[role="tab"]');
+                                    if (tabs[cache.tab]) tabs[cache.tab].click();
+                                }}
+                            }}, 300);
+                        }}
+                    }}
+
+                    /* Ao trocar de aba, atualiza o índice salvo no cache */
+                    (function attachTabCacheListeners() {{
+                        var doc = window.parent.document;
+                        var tablist = doc.querySelector('[role="tablist"]');
+                        if (!tablist) return;
+                        var tabs = Array.from(tablist.querySelectorAll('[role="tab"]'));
+                        tabs.forEach(function(tabBtn, idx) {{
+                            tabBtn.addEventListener('click', function() {{
+                                salvarCache(idx);
+                            }});
+                        }});
+                    }})();
+                }} catch (e) {{}}
+            }})();
+
             function scrollToTop() {{
                 const panels = window.parent.document.querySelectorAll('[role="tabpanel"]');
                 panels.forEach(function(panel) {{ panel.scrollTop = 0; }});
